@@ -15,6 +15,8 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
         Crystal structure.
     wavelength: float
         Wavelength in angstrom.
+    outputType: str {2theta, d, k}
+        X axis type.
     a, c: float
         Lattice paramaters in angstrom.
     printReflections: bool

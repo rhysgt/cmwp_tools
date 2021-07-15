@@ -2,7 +2,8 @@
 
 A collection of tools and scripts which are useful for maipulating XRD data and performing CMWP
 
-- src/cmwp_tools.py (library contining useful commands)
+- src/xrd_tools.py (library containing usefult general xrd commands)
+- src/cmwp_tools.py (library contining useful commands specific to CMWP)
 - data/srim.txt (SRIM data for Zr - 1dpa at 60% depth)
 - data/ellipticities.txt (Chk0al, alaL and a2aL for given ellipticity - used for dislocation loop type calculation)
 - Extract_data.ipynb (Data extraction from a folder of .sol files)
