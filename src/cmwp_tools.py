@@ -489,42 +489,29 @@ class dislocationTypeCalc:
             return a, c, ac, error_a_neg, error_a_pos, error_c_neg, error_c_pos, error_ac_neg, error_ac_pos, a_loop, errorneg, errorpos, new_rho
         
     def calcEllipticity(self):
-        ''' Calculate the a1 and a2 values for a given ellipticity
+        ''' Calculate the a1 and a2 values for a given ellipticity, based on 30% of a loops with <11-20> and 
+        70% of a loops with <10-10> habit planes, from literature values
+        
+        References
+        ----------
+        L. Balogh et al., Contrast factors of irradiation-induced dislocation loops in hexagonal materials
         
         '''
+        
+        data = np.loadtxt('ellipticities.txt')
+        
+        ellipticityList = data[:,0]
+        Chk0alList = data[:,1]
+        a1aLList = data[:,2]
+        a2aLList = data[:,3]
 
-        if self.ellipticity == 0.05: self.Chk0al=0.17421; self.a1aL=0.51147; self.a2aL=-0.19108;
-        elif self.ellipticity == 0.1: self.Chk0al=0.17617; self.a1aL=0.48051; self.a2aL=-0.19709;
-        elif self.ellipticity == 0.1667: self.Chk0al=0.18115; self.a1aL=0.39753; self.a2aL=-0.20912;
-        elif self.ellipticity == 0.2: self.Chk0al=0.1841; self.a1aL=0.34862; self.a2aL=-0.2155;
-        elif self.ellipticity == 0.25: self.Chk0al=0.1889; self.a1aL=0.27209; self.a2aL=-0.22506;
-        elif self.ellipticity == 0.3333: self.Chk0al=0.19728; self.a1aL=0.14461; self.a2aL=-0.24002;
-        elif self.ellipticity == 0.5: self.Chk0al=0.21423; self.a1aL=-0.08622; self.a2aL=-0.26496;
-        elif self.ellipticity == 0.6667: self.Chk0al=0.22979; self.a1aL=-0.2726; self.a2aL=-0.28347;
-        elif self.ellipticity == 0.75: self.Chk0al=0.23678; self.a1aL=-0.35014; self.a2aL=-0.29074;
-        elif self.ellipticity == 1: self.Chk0al=0.2551; self.a1aL=-0.53316; self.a2aL=-0.30703;
-        elif self.ellipticity == 1.5: self.Chk0al=0.28089; self.a1aL=-0.75509; self.a2aL=-0.32479;
-        elif self.ellipticity == 2: self.Chk0al=0.29712; self.a1aL=-0.87793; self.a2aL=-0.33359;
-        elif self.ellipticity == 2.5: self.Chk0al=0.3078; self.a1aL=-0.95297; self.a2aL=-0.33845;
-        elif self.ellipticity == 3: self.Chk0al=0.31521; self.a1aL=-1.00239; self.a2aL=-0.34145;
-        elif self.ellipticity == 3.5: self.Chk0al=0.32055; self.a1aL=-1.03688; self.a2aL=-0.34344;
-        elif self.ellipticity == 4: self.Chk0al=0.32452; self.a1aL=-1.06186; self.a2aL=-0.34473;
-        elif self.ellipticity == 4.5: self.Chk0al=0.32752; self.a1aL=-1.08073; self.a2aL=-0.34576;
-        elif self.ellipticity == 5: self.Chk0al=0.32989; self.a1aL=-1.09531; self.a2aL=-0.34647;
-        elif self.ellipticity == 6: self.Chk0al=0.33333; self.a1aL=-1.11597; self.a2aL=-0.34743;
-        elif self.ellipticity == 7: self.Chk0al=0.33563; self.a1aL=-1.12979; self.a2aL=-0.34807;
-        elif self.ellipticity == 8: self.Chk0al=0.3373; self.a1aL=-1.13966; self.a2aL=-0.34855;
-        elif self.ellipticity == 9: self.Chk0al=0.3385; self.a1aL=-1.147; self.a2aL=-0.34888;
-        elif self.ellipticity == 10: self.Chk0al=0.3395; self.a1aL=-1.15271; self.a2aL=-0.34913;
-        elif self.ellipticity == 12: self.Chk0al=0.3409; self.a1aL=-1.16097; self.a2aL=-0.34944;
-        elif self.ellipticity == 14: self.Chk0al=0.3418; self.a1aL=-1.16651; self.a2aL=-0.34963;
-        elif self.ellipticity == 16: self.Chk0al=0.3425; self.a1aL=-1.17039; self.a2aL=-0.34974;
-        elif self.ellipticity == 18: self.Chk0al=0.3429; self.a1aL=-1.17304; self.a2aL=-0.34982;
-        elif self.ellipticity == 20: self.Chk0al=0.3432; self.a1aL=-1.175; self.a2aL=-0.34985;
+        if np.min(ellipticityList) <= self.ellipticity <= np.max(ellipticityList):
+            index = np.argmin(np.abs(self.ellipticity-ellipticityList))
+            self.Chk0al = Chk0alList[index]
+            self.a1aL = a1aLList[index]
+            self.a2aL = a2aLList[index]
         else: 
-            raise ValueError('Ellipticity value must be one of the following:\
-                        n0.05, 0.1, 0.1667, 0.2, 0.25, 0.3333, 0.5, 0.6667, 0.75, 1,\
-                          n1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10, 12, 14, 16, 18, 20')
+            raise ValueError('Ellipticity value must be in range 0.05 -> 20')
 
 def extractDataDir(directory, ellipticity=1):
     '''Extract physical paramaters from all CMWP solution files in a directory
