@@ -1,7 +1,7 @@
 import numpy as np
 
 def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None, printReflections=False):
-    """ Makes a list of hkl and 2theta for a given wavelength and lattice.
+    """ Makes a list of hkl and peak position (2theta, d or k) for a given wavelength and lattice.
     
     Params
     ------
@@ -21,14 +21,14 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
     peak_name: numpy.ndarray(str)
         Peak hkls.
     peak_pos: numpy.ndarray(float)
-        Positions of peaks.
+        Positions of peaks in 2theta, d [Å] or k [Å]
     """
     
     # Peak indexes for different crystal structures
-    hkls = {'hcp': ['100','002','101','102','110','013','020','112','021','004',
-                   '022','014','023','210','211','114','212','015','024','030',
-                   '213','032','006','025','016','214','220','310','222','311',
-                   '116','034','312','215','026','017','313','040','041','224'],
+    hkls = {'hcp': ['100', '002', '101', '102', '110', '013', '020', '112', '021', '004',
+                   '022', '014', '023', '210', '211', '114', '212', '015', '024', '030',
+                   '213', '032', '006', '025', '016', '214', '220', '310', '222', '311',
+                   '116', '034', '312', '215', '026', '017', '313', '040', '041', '224'],
             
            'bcc': ['101', '200', '211', '022', '103', '222', '213', '040', '330', '420', 
                    '332', '422', '134', '521', '404', '433', '244', '352', '026', '154', 
