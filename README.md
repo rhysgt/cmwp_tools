@@ -1,6 +1,8 @@
-# cmwp_tools
+# Introduction
 
 A collection of tools and scripts which are useful for maipulating XRD data and performing CMWP
+
+# Contents
 
 ### Scripts
 - src/xrd_tools.py (library containing usefult general xrd commands
