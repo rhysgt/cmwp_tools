@@ -500,7 +500,7 @@ class dislocationTypeCalc:
         
         '''
         
-        data = np.loadtxt('ellipticities.txt')
+        data = np.loadtxt('data/ellipticities.txt')
         
         ellipticityList = data[:,0]
         Chk0alList = data[:,1]

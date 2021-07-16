@@ -21,7 +21,7 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
     peak_name: numpy.ndarray(str)
         Peak hkls.
     peak_pos: numpy.ndarray(float)
-        2theta positions of peaks.
+        Positions of peaks.
     """
     
     hkls = {'hcp': ['100','002','101','102','110','013','020','112','021','004',
@@ -44,9 +44,11 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
                      '224', '403', '431', '511', '324', '125', '440', '414', '343', '513', 
                      '424', '610', '532', '026', '344', '145', '335', '262', '452', '316']}
     
-    peak_pos_2th = []; peak_pos_d = []; peak_name = []
+    peak_pos_2th = []; peak_pos_d = []; peak_pos_k = []; peak_name = []
     
     # Check for errors
+    if (outputType != '2theta') & (outputType != 'd') & (outputType != 'k'):
+        raise Exception('outputType must be 2theta, d or k')
     if crystalType == 'hcp':
         if (a == None) or (c == None):
             raise Exception('a and c lattice paramaters must be specified')
@@ -67,21 +69,25 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
             in_rad = 2*np.arcsin(wavelength/(2*d))
             peak_pos_2th.append(np.rad2deg(in_rad))
             peak_pos_d.append(d)
+            peak_pos_k.append(1/d)
             peak_name.append(peak)
 
     # Print reflections
     if printReflections:
         if crystalType == 'hcp':
-            print('Indexing hcp peaks for a = {0:.3f} A, c = {1:.3f} A at wavelength = {2:.3f} A:'.format(a,c, wavelength))
+            print('Indexing hcp peaks for a = {0:.3f} Å, c = {1:.3f} Å at wavelength = {2:.3f} Å:'.format(a,c, wavelength))
             
         elif crystalType == 'bcc' or 'fcc' or 'cubic':
-            print('Indexing {0} peaks for a = {1:.3f} A: at wavelength = {2:.3f} A'.format(crystalType, a, wavelength))
-        for name, pos_2th, pos_d in zip(peak_name, peak_pos_2th, peak_pos_d):
-            print('{0}\t{1:.3f}\t{2:.3f}'.format(name,pos_d, pos_2th))
+            print(r'Indexing {0} peaks for a = {1:.3f} Å: at wavelength = {2:.3f} Å\n'.format(crystalType, a, wavelength))
+            
+        print('')
+        print('index\td (Å)\tK (1/Å)\t2theta')
+        for name, pos_2th, pos_d, pos_k in zip(peak_name, peak_pos_2th, peak_pos_d, peak_pos_k):
+            print('{0}\t{1:.3f}\t{2:.3f}\t{3:.3f}'.format(name, pos_d, pos_k, pos_2th))
 
     if outputType == '2theta':
         return np.array(peak_name), np.array(peak_pos_2th)
     elif outputType == 'd':
         return np.array(peak_name), np.array(peak_pos_d)
     elif outputType == 'k':
-        return np.array(peak_name), 1/np.array(peak_pos_d)
+        return np.array(peak_name), np.array(peak_pos_k)
