@@ -5,7 +5,7 @@ A collection of tools and scripts which are useful for maipulating XRD data and 
 # Contents
 
 ### Scripts
-- **src/xrd_tools.py** (library containing usefult general xrd commands
+- **src/xrd_tools.py** (library containing useful general XRD routines)
   - getReflections: makes a list of peak hkl and position for given wavelength and crystal structure
 - **src/cmwp_tools.py** (library contining useful commands specific to CMWP)
 
