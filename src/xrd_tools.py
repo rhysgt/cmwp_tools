@@ -24,6 +24,7 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
         Positions of peaks.
     """
     
+    # Peak indexes for different crystal structures
     hkls = {'hcp': ['100','002','101','102','110','013','020','112','021','004',
                    '022','014','023','210','211','114','212','015','024','030',
                    '213','032','006','025','016','214','220','310','222','311',
@@ -85,6 +86,7 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
         for name, pos_2th, pos_d, pos_k in zip(peak_name, peak_pos_2th, peak_pos_d, peak_pos_k):
             print('{0}\t{1:.3f}\t{2:.3f}\t{3:.3f}'.format(name, pos_d, pos_k, pos_2th))
 
+    # Output reflections
     if outputType == '2theta':
         return np.array(peak_name), np.array(peak_pos_2th)
     elif outputType == 'd':
