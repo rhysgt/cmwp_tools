@@ -5,7 +5,7 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
     
     Params
     ------
-    crystalType: str {hcp, bcc, fcc or cubic}
+    crystalType: str {hcp, bcc, fcc, fct or cubic}
         Crystal structure.
     wavelength: float
         Wavelength in angstrom.
@@ -43,29 +43,34 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
            'cubic': ['100', '101', '111', '200', '210', '112', '220', '122', '310', '131', 
                      '222', '032', '132', '400', '232', '411', '313', '024', '241', '332', 
                      '224', '403', '431', '511', '324', '125', '440', '414', '343', '513', 
-                     '424', '610', '532', '026', '344', '145', '335', '262', '452', '316']}
+                     '424', '610', '532', '026', '344', '145', '335', '262', '452', '316'],
+            
+           'fct': ['110', '111', '002', '200', '112', '022', '220', '113', '311', '222', '004', '400']}
     
     peak_pos_2th = []; peak_pos_d = []; peak_pos_k = []; peak_name = []
     
     # Check for errors
-    if (outputType != '2theta') & (outputType != 'd') & (outputType != 'k'):
+    if outputType not in ['2theta', 'd', 'k']:
         raise Exception('outputType must be 2theta, d or k')
-    if crystalType == 'hcp':
+
+    if crystalType in ['hcp', 'fct']:
         if (a == None) or (c == None):
             raise Exception('a and c lattice paramaters must be specified')
-    elif crystalType == 'bcc' or 'fcc' or 'cubic':
+    elif crystalType in ['bcc', 'fcc', 'cubic']:
         if a == None:
-            raise Exception('a lattice paramater must be specified')
+            raise Exception('a lattice paramater must be specified')           
     else:
-        raise Exception('crystalType of hcp, bcc, fcc or cubic must be specified')
+        raise Exception('crystalType of hcp, bcc, fcc, fct or cubic must be specified')
     
     # Calculate reflections
     for peak in hkls[crystalType]:
         h = int(peak[0]); k = int(peak[1]); l = int(peak[2]);
         if crystalType == 'hcp':
             d = (np.sqrt(1/((4/3)*(((h*h)+(k*k)+h*k)/(a*a))+(l*l/(c*c)))))
-        elif crystalType == 'bcc' or 'fcc' or 'cubic':
+        elif crystalType in ['bcc', 'fcc', 'cubic']:
             d = a / np.sqrt(h*h+k*k+l*l)
+        elif crystalType == 'fct':
+            d = np.sqrt(1/ (((h*h+k*k)/(a*a))+(l*l/(c*c))))
         if wavelength/(2*d) < 1:
             in_rad = 2*np.arcsin(wavelength/(2*d))
             peak_pos_2th.append(np.rad2deg(in_rad))
@@ -75,16 +80,17 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
 
     # Print reflections
     if printReflections:
-        if crystalType == 'hcp':
-            print('Indexing hcp peaks for a = {0:.3f} Å, c = {1:.3f} Å at wavelength = {2:.3f} Å:'.format(a,c, wavelength))
-            
-        elif crystalType == 'bcc' or 'fcc' or 'cubic':
-            print(r'Indexing {0} peaks for a = {1:.3f} Å: at wavelength = {2:.3f} Å\n'.format(crystalType, a, wavelength))
+        if crystalType in ['hcp', 'fct']:
+            print(r'Indexing {0} peaks for a = {1:.3f} Å, c = {2:.3f} Å at wavelength = {3:.3f} Å:'.format(crystalType,a,c,wavelength))
+                
+        elif crystalType in ['bcc', 'fcc', 'cubic']:
+            print(r'Indexing {0} peaks for a = {1:.3f} Å: at wavelength = {2:.3f} Å'.format(crystalType, a, wavelength))
             
         print('')
         print('index\td (Å)\tK (1/Å)\t2theta')
         for name, pos_2th, pos_d, pos_k in zip(peak_name, peak_pos_2th, peak_pos_d, peak_pos_k):
             print('{0}\t{1:.3f}\t{2:.3f}\t{3:.3f}'.format(name, pos_d, pos_k, pos_2th))
+        print('\n')
 
     # Output reflections
     if outputType == '2theta':
