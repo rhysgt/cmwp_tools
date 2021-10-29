@@ -1,6 +1,7 @@
 import numpy as np
 
-def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None, printReflections=False):
+def getReflections(crystalType, wavelength, outputType='2theta', a=None, b=None, c=None, alpha=90., beta=90., gamma=90.,
+                   printReflections=False):
     """ Makes a list of hkl and peak position (2theta, d or k) for a given wavelength and lattice.
     
     Params
@@ -11,8 +12,8 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
         Wavelength in angstrom.
     outputType: str {2theta, d, k}
         X axis type.
-    a, c: float
-        Lattice paramaters in angstrom.
+    a, b, c, alpha, beta, gamma: float
+        Lattice paramaters in angstrom/ degrees.
     printReflections: bool
         If true, print a list of peak names and positions.
         
@@ -45,7 +46,13 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
                      '224', '403', '431', '511', '324', '125', '440', '414', '343', '513', 
                      '424', '610', '532', '026', '344', '145', '335', '262', '452', '316'],
             
-           'fct': ['110', '111', '002', '200', '112', '022', '220', '113', '311', '222', '004', '400']}
+           'fct': ['110', '111', '002', '200', '112', '022', '220', '113', '311', '222', '004', '400'],
+           
+           'orth': ['011', '111', '002', '020', '200', '211', '022', '202', '220', '013',
+                   '113', '031', '131', '311', '222', '213', '004', '231', '040', '400',
+                   '033', '133', '024', '313', '204', '331', '042', '402', '240', '420',
+                   '224', '242', '422', '115', '333', '151']
+           }
     
     peak_pos_2th = []; peak_pos_d = []; peak_pos_k = []; peak_name = []
     
@@ -56,9 +63,16 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
     if crystalType in ['hcp', 'fct']:
         if (a == None) or (c == None):
             raise Exception('a and c lattice paramaters must be specified')
+        else:
+            b = a
     elif crystalType in ['bcc', 'fcc', 'cubic']:
         if a == None:
-            raise Exception('a lattice paramater must be specified')           
+            raise Exception('a lattice paramater must be specified')
+        else:
+            b = c = a
+    elif crystalType in ["orth"]:
+        if (a==None) or (b==None) or (c==None):
+            raise Exception('all a, b & c lattice parameters must be specified')
     else:
         raise Exception('crystalType of hcp, bcc, fcc, fct or cubic must be specified')
     
@@ -67,10 +81,16 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, c=None,
         h = int(peak[0]); k = int(peak[1]); l = int(peak[2]);
         if crystalType == 'hcp':
             d = (np.sqrt(1/((4/3)*(((h*h)+(k*k)+h*k)/(a*a))+(l*l/(c*c)))))
-        elif crystalType in ['bcc', 'fcc', 'cubic']:
-            d = a / np.sqrt(h*h+k*k+l*l)
-        elif crystalType == 'fct':
-            d = np.sqrt(1/ (((h*h+k*k)/(a*a))+(l*l/(c*c))))
+        elif crystalType == 'bcc' or 'fcc' or 'cubic' or 'orth':
+            X = np.sqrt(1 - np.cos(np.radians(alpha))**2 - np.cos(np.radians(beta))**2 - np.cos(np.radians(gamma))**2 +
+                                    2*np.cos(np.radians(alpha))*np.cos(np.radians(beta))*np.cos(np.radians(gamma)))
+            Y = np.sqrt(((h/a)**2)*np.sin(np.radians(alpha))**2 + 
+                                    ((k/b)**2)*np.sin(np.radians(beta))**2 +
+                                    ((l/c)**2)*np.sin(np.radians(gamma))**2 - 
+                                    ((2*k*l)/(b*c))*(np.cos(np.radians(alpha))-np.cos(np.radians(beta))*np.cos(np.radians(gamma))) - 
+                                    ((2*l*h)/(c*a))*(np.cos(np.radians(beta))-np.cos(np.radians(gamma))*np.cos(np.radians(alpha))) - 
+                                    ((2*h*k)/(a*b))*(np.cos(np.radians(gamma))-np.cos(np.radians(alpha))*np.cos(np.radians(beta))))
+            d = X/Y     
         if wavelength/(2*d) < 1:
             in_rad = 2*np.arcsin(wavelength/(2*d))
             peak_pos_2th.append(np.rad2deg(in_rad))
