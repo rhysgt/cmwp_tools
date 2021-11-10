@@ -8,7 +8,7 @@ def getReflections(crystalType, wavelength, outputType='2theta',
     
     Params
     ------
-    crystalType: str {hcp, bcc, fcc, fct or cubic}
+    crystalType: str {hcp, bcc, fcc, fct, cubic or orth}
         Crystal structure.
     wavelength: float
         Wavelength in angstrom.
@@ -50,11 +50,13 @@ def getReflections(crystalType, wavelength, outputType='2theta',
                      '224', '403', '431', '511', '324', '125', '440', '414', '343', '513', 
                      '424', '610', '532', '026', '344', '145', '335', '262', '452', '316'],
             
-           'fct': ['101', '110', '002', '200', '112', '211', '022', '013', '220', '301', 
-                   '004', '130', '222', '123', '114', '312', '231', '204', '303', '400', 
-                   '015', '141', '224', '330', '402', '233', '134', '240', '332', '125',
-                   '006', '422', '413', '116', '035', '431', '044', '150', '026', '334'],
-           
+           # Based on P42/n space group reflections from Topas
+           'fct': ['110', '011', '111', '020', '002', '021', '012', '211', '112', '220', 
+                   '022', '221', '212', '130', '031', '131', '013', '222', '113', '032',
+                   '321', '132', '023', '213', '040', '041', '322', '330', '141', '223',
+                   '331', '004', '033', '420', '014', '042', '313'],
+
+           # Based on CCCm?? space group reflections
            'orth': ['011', '111', '002', '020', '200', '211', '022', '202', '220', '013',
                     '113', '031', '131', '311', '222', '213', '004', '231', '040', '400',
                     '033', '133', '024', '313', '204', '331', '042', '402', '240', '420',
@@ -85,8 +87,10 @@ def getReflections(crystalType, wavelength, outputType='2theta',
 
     # In orth - all paramaters must be defined
     elif crystalType in ["orth"]:
-        if None in [a, b, c, alpha, beta, gamma]:
-            raise Exception('a, b, c, alpha, beta and gamma lattice parameters must be specified')
+        if None in [a, b, c]:
+            raise Exception('a, b and c lattice parameters must be specified')
+        else:
+            alpha = 90.; beta = 90.; gamma = 90.
     else:
         raise Exception('crystalType of hcp, bcc, fcc, fct, cubic or orth must be specified')
     
