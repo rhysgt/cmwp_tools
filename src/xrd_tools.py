@@ -1,7 +1,9 @@
 import numpy as np
 
-def getReflections(crystalType, wavelength, outputType='2theta', a=None, b=None, c=None, alpha=90., beta=90., gamma=90.,
-                   printReflections=False):
+def getReflections(crystalType, wavelength, outputType='2theta', 
+                    a=None, b=None, c=None, 
+                    alpha=None, beta=None, gamma=None,
+                    printReflections=False):
     """ Makes a list of hkl and peak position (2theta, d or k) for a given wavelength and lattice.
     
     Params
@@ -11,9 +13,11 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, b=None,
     wavelength: float
         Wavelength in angstrom.
     outputType: str {2theta, d, k}
-        X axis type.
-    a, b, c, alpha, beta, gamma: float
-        Lattice paramaters in angstrom/ degrees.
+        X axis type (2theta, d [Å] or k [Å]).
+    a, b, c: float
+        Lattice paramaters in angstroms.
+    alpha, beta, gamma: float
+        Lattice paramaters in degrees.
     printReflections: bool
         If true, print a list of peak names and positions.
         
@@ -46,12 +50,15 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, b=None,
                      '224', '403', '431', '511', '324', '125', '440', '414', '343', '513', 
                      '424', '610', '532', '026', '344', '145', '335', '262', '452', '316'],
             
-           'fct': ['110', '111', '002', '200', '112', '022', '220', '113', '311', '222', '004', '400'],
+           'fct': ['101', '110', '002', '200', '112', '211', '022', '013', '220', '301', 
+                   '004', '130', '222', '123', '114', '312', '231', '204', '303', '400', 
+                   '015', '141', '224', '330', '402', '233', '134', '240', '332', '125',
+                   '006', '422', '413', '116', '035', '431', '044', '150', '026', '334'],
            
            'orth': ['011', '111', '002', '020', '200', '211', '022', '202', '220', '013',
-                   '113', '031', '131', '311', '222', '213', '004', '231', '040', '400',
-                   '033', '133', '024', '313', '204', '331', '042', '402', '240', '420',
-                   '224', '242', '422', '115', '333', '151']
+                    '113', '031', '131', '311', '222', '213', '004', '231', '040', '400',
+                    '033', '133', '024', '313', '204', '331', '042', '402', '240', '420',
+                    '224', '242', '422', '115', '333', '151']
            }
     
     peak_pos_2th = []; peak_pos_d = []; peak_pos_k = []; peak_name = []
@@ -60,43 +67,56 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, b=None,
     if outputType not in ['2theta', 'd', 'k']:
         raise Exception('outputType must be 2theta, d or k')
 
+    # In hcp, fct - a and c must be defined
     if crystalType in ['hcp', 'fct']:
-        if (a == None) or (c == None):
+        if None in [a, c]:
             raise Exception('a and c lattice paramaters must be specified')
         else:
             b = a
+            alpha = 90.; beta = 90.; gamma = 90.
+    
+    # In bcc, fcc, cubic - a must be defined
     elif crystalType in ['bcc', 'fcc', 'cubic']:
         if a == None:
             raise Exception('a lattice paramater must be specified')
         else:
             b = c = a
+            alpha = 90.; beta = 90.; gamma = 90.
+
+    # In orth - all paramaters must be defined
     elif crystalType in ["orth"]:
-        if (a==None) or (b==None) or (c==None):
-            raise Exception('all a, b & c lattice parameters must be specified')
+        if None in [a, b, c, alpha, beta, gamma]:
+            raise Exception('a, b, c, alpha, beta and gamma lattice parameters must be specified')
     else:
-        raise Exception('crystalType of hcp, bcc, fcc, fct or cubic must be specified')
+        raise Exception('crystalType of hcp, bcc, fcc, fct, cubic or orth must be specified')
     
+    h = np.array([float(s[0]) for s in hkls[crystalType]])
+    k = np.array([float(s[1]) for s in hkls[crystalType]])
+    l = np.array([float(s[2]) for s in hkls[crystalType]])
+
     # Calculate reflections
-    for peak in hkls[crystalType]:
-        h = int(peak[0]); k = int(peak[1]); l = int(peak[2]);
-        if crystalType == 'hcp':
-            d = (np.sqrt(1/((4/3)*(((h*h)+(k*k)+h*k)/(a*a))+(l*l/(c*c)))))
-        elif crystalType == 'bcc' or 'fcc' or 'cubic' or 'orth':
-            X = np.sqrt(1 - np.cos(np.radians(alpha))**2 - np.cos(np.radians(beta))**2 - np.cos(np.radians(gamma))**2 +
-                                    2*np.cos(np.radians(alpha))*np.cos(np.radians(beta))*np.cos(np.radians(gamma)))
-            Y = np.sqrt(((h/a)**2)*np.sin(np.radians(alpha))**2 + 
-                                    ((k/b)**2)*np.sin(np.radians(beta))**2 +
-                                    ((l/c)**2)*np.sin(np.radians(gamma))**2 - 
-                                    ((2*k*l)/(b*c))*(np.cos(np.radians(alpha))-np.cos(np.radians(beta))*np.cos(np.radians(gamma))) - 
-                                    ((2*l*h)/(c*a))*(np.cos(np.radians(beta))-np.cos(np.radians(gamma))*np.cos(np.radians(alpha))) - 
-                                    ((2*h*k)/(a*b))*(np.cos(np.radians(gamma))-np.cos(np.radians(alpha))*np.cos(np.radians(beta))))
-            d = X/Y     
-        if wavelength/(2*d) < 1:
-            in_rad = 2*np.arcsin(wavelength/(2*d))
-            peak_pos_2th.append(np.rad2deg(in_rad))
-            peak_pos_d.append(d)
-            peak_pos_k.append(1/d)
-            peak_name.append(peak)
+    if crystalType == 'hcp':
+        peak_pos_d = np.array(np.sqrt(1/((4/3)*(((h*h)+(k*k)+h*k)/(a*a))+(l*l/(c*c)))))
+    elif crystalType == 'bcc' or 'fcc' or 'cubic' or 'orth':
+        X = np.sqrt(1 - np.cos(np.radians(alpha))**2 - np.cos(np.radians(beta))**2 - np.cos(np.radians(gamma))**2 +
+                                2*np.cos(np.radians(alpha))*np.cos(np.radians(beta))*np.cos(np.radians(gamma)))
+        Y = np.sqrt(((h/a)**2)*np.sin(np.radians(alpha))**2 + 
+                                ((k/b)**2)*np.sin(np.radians(beta))**2 +
+                                ((l/c)**2)*np.sin(np.radians(gamma))**2 - 
+                                ((2*k*l)/(b*c))*(np.cos(np.radians(alpha))-np.cos(np.radians(beta))*np.cos(np.radians(gamma))) - 
+                                ((2*l*h)/(c*a))*(np.cos(np.radians(beta))-np.cos(np.radians(gamma))*np.cos(np.radians(alpha))) - 
+                                ((2*h*k)/(a*b))*(np.cos(np.radians(gamma))-np.cos(np.radians(alpha))*np.cos(np.radians(beta))))
+        peak_pos_d = X/Y
+
+    # Remove any d values where wavelength/(2*d) > 1
+    condition = np.array(wavelength/(2*peak_pos_d) < 1)
+    peak_name = np.array(hkls[crystalType])[condition]
+    peak_pos_d = peak_pos_d[condition]
+
+    # Calculate 2theta and k
+    peak_pos_2th = np.rad2deg(2*np.arcsin(wavelength/(2*peak_pos_d)))
+    peak_pos_k = 1/peak_pos_d
+
 
     # Print reflections
     if printReflections:
@@ -104,7 +124,11 @@ def getReflections(crystalType, wavelength, outputType='2theta', a=None, b=None,
             print(r'Indexing {0} peaks for a = {1:.3f} Å, c = {2:.3f} Å at wavelength = {3:.3f} Å:'.format(crystalType,a,c,wavelength))
                 
         elif crystalType in ['bcc', 'fcc', 'cubic']:
-            print(r'Indexing {0} peaks for a = {1:.3f} Å: at wavelength = {2:.3f} Å'.format(crystalType, a, wavelength))
+            print(r'Indexing {0} peaks for a = {1:.3f} Å at wavelength = {2:.3f} Å'.format(crystalType, a, wavelength))
+
+        elif crystalType in ['orth']:
+            print(r'Indexing {0} peaks for a = {1:.3f} Å, b = {2:.3f} Å, c = {3:.3f} Å,'.format(crystalType, a, b, c))
+            print(r'alpha = {0:.3f} °, beta = {1:.3f} °, gamma = {2:.3f} ° at wavelength = {3:.3f} Å'.format(alpha, beta, gamma, wavelength))
             
         print('')
         print('index\td (Å)\tK (1/Å)\t2theta')
