@@ -25,4 +25,4 @@ A collection of tools and scripts which are useful for maipulating XRD data and 
 - **Zr_DESY_2021.ipynb** (Integration of data from DESY experiment and production of .bg-spline.dat and .peak-index.dat)
 - **Zr_batch.ipynb** (Production of .bg-spline.dat and .peak-index.dat for prep-integrated data)
 - **Label_reflections.ipynb** (Load XRD data and label Zr/ZrH/SPP peaks)
-- **Make_CMWP_intrumental.ipynb** - Generates an instrumental folder for CMWP from a LaB6 pattern **UNFINISHED**
+- **Make_CMWP_intrumental.ipynb** - Generates an instrumental folder for CMWP from a LaB6 pattern **UNPOLISHED**
