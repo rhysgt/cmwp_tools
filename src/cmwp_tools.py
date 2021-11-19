@@ -429,9 +429,21 @@ class dislocationTypeCalc:
         else: 
             raise ValueError('Ellipticity value must be in range 0.05 -> 20')
 
-def extractDataDir(directory, ellipticity=1):
+def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wavelength=None):
     '''Extract physical paramaters from all CMWP solution files in a directory
     
+    Paramaters
+    -----------
+    directory: str
+        Directory containing solution files to parse.
+    calcLoop: bool
+        If true, calculate <a> and <c> loop fractions from a1, a2.
+    ellipticity: float
+        The ellipticity to use for <a>/<c> loop fraction calculation.
+    
+    Example
+    -------
+    >> data_df = extractDataDir('/home/rhys/Documents/CMWP-211102/2020_11_DESY/hyd/*.sol', calcLoop=False, ellipticity=1)
     '''    
 
     file_list = []
@@ -442,21 +454,19 @@ def extractDataDir(directory, ellipticity=1):
     file_list.sort()
     print('Parsing {0} solution files...'.format(len(file_list)))
         
-    data_df = extractDataFile(file_list, ellipticity=ellipticity)
-
-    return data_df
-
-def extractDataFile(files, ellipticity):
-    '''Extract physical paramaters from CMWP solution files
-    
-    ''' 
-   
-    data_list=[]; index_list=[];
     num_error = 0
     
-    for i, fullname in enumerate(files):
+    data_df = pd.DataFrame()
+    
+    for i, fullname in enumerate(file_list):
         
         with open(fullname, 'r', encoding='ISO-8859-1') as file_:
+            
+            dataDict = {}
+            
+            dataDict['peak_names'] = []; dataDict['peak_pos'] = []; dataDict['peak_int'] = [];
+            
+            dataDict['filename'] = fullname.split('/')[-1]
             
             lines = file_.readlines()
             
@@ -467,22 +477,28 @@ def extractDataFile(files, ellipticity):
             else:
                 print('Reading {0}                     \r'.format(fullname), end='')
             
+                readParams = 0
+                ####### READ PHYSICAL PARAMATERS
                 for line in lines:
-                    if 'WSSR=' in line[0:5]: wssr = float(line.split('=')[1])
-                    if 'a1=' in line[0:3]: a1 = float(line.split('=')[1])
-                    if 'a2=' in line[0:3]: a2 = float(line.split('=')[1])
-                    if 'b=' in line[0:2]: b = float(line.split('=')[1]) 
-                    if 'c=' in line[0:2]: c = float(line.split('=')[1])
-                    if 'd=' in line[0:2]: d = float(line.split('=')[1])
-                    if 'e=' in line[0:2]: e = float(line.split('=')[1])
-                    if 'M=' in line[0:2]: m = float(line.split('=')[2])
+                    if 'WSSR=' in line[0:5]: dataDict['wssr'] = float(line.split('=')[1])
+                    
+                    ### BETWEEN HERE
+                    if 'The final parameters:' in line:
+                        readParams = 1
+                        
+                    if (readParams == 1) and ('=' in line):
+                        if line.split('=')[1] == '\n':
+                            break
+                        else:
+                            dataDict[line.split('=')[0]] = float(line.split('=')[1][:-1])
+                            
+                    ### AND HERE
+                    if 'And now listing the physical' in line:
+                        readParams = 0
+                    
 
-                ## Catch errors
-                for idx, param in enumerate([wssr, a1, a2, b, c, d, e, m]):
-                    if param == None: raise ValueError('\033[91m' + 'Error with file {0}'.format(fullname) + '\033[0m')
-
+                ####### READ PHYSICAL PARAMATER ERRORS
                 i=0
-                peak_names = []; peak_pos = []; peak_int = [];
                 for line in lines:
                     if 'error estimates for parameter' in line:
                         par=line.split(' ')[6]
@@ -495,29 +511,16 @@ def extractDataFile(files, ellipticity):
                                 error_abs[idx] = float(nums[0]) * 10**(int(nums[1]))
                             else:
                                 error_abs[idx] = re.findall(r"[-+]?\d*\.?\d+|\d+", text)[0]
-
-                        ## Calculate absolute error values
-                        listpar=['a1', 'a2', 'b', 'c', 'd', 'e']
-
-                        if par == listpar[0]:
-                            a1_neg = np.abs((float(error_abs[0])/100)*a1); a1_pos = np.abs((float(error_abs[1])/100)*a1);
-                        if par == listpar[1]:
-                            a2_neg = np.abs((float(error_abs[0])/100)*a2); a2_pos = np.abs((float(error_abs[1])/100)*a2);
-                        if par == listpar[2]:
-                            b_neg = np.abs((float(error_abs[0])/100)*b); b_pos = np.abs((float(error_abs[1])/100)*b);
-                        if par == listpar[3]:
-                            c_neg = np.abs((float(error_abs[0])/100)*c); c_pos = np.abs((float(error_abs[1])/100)*c);
-                        if par == listpar[4]:
-                            d_neg = np.abs((float(error_abs[0])/100)*d); d_pos = np.abs((float(error_abs[1])/100)*d);
-                        if par == listpar[5]:
-                            e_neg = np.abs((float(error_abs[0])/100)*e); e_pos = np.abs((float(error_abs[1])/100)*e);
-                            m_neg = np.abs((float(error_abs[0])/100)*m); m_pos = np.abs((float(error_abs[1])/100)*m);
+                        
+                        dataDict[par+'_neg'] = np.abs((float(error_abs[0])/100)*dataDict[par])
+                        dataDict[par+'_pos'] = np.abs((float(error_abs[1])/100)*dataDict[par])
 
                     if 'hkl=' in line:
-                        peak_names.append(line.split('=')[1][0:3])
+                        dataDict['peak_names'].append(line.split('=')[1][0:3])
                     if 'i_s0' in line:
                         if '+' in line:
-                            peak_pos.append(float(line.split('=')[1].split('+')[0]))
+                            dataDict['peak_pos'].append(float(line.split('=')[1].split('+')[0]))
+                            
                             
                     # EXAMPLE: i_max_7         = 939.718          +/- 4.919        (0.5234%)
                     # EXAMPLE: i_max_1         = 1.00679e+12      +/- 2.881e+09    (0.2861%)
@@ -528,45 +531,36 @@ def extractDataFile(files, ellipticity):
                         if 'e' in numberString:
                             # [1.00679, 12]
                             num, power = numberString.split('e+')
-                            peak_int.append(float(num) * 10**int(power))
+                            dataDict['peak_int'].append(float(num) * 10**int(power))
                         else:
-                            peak_int.append(float(numberString))
+                            dataDict['peak_int'].append(float(numberString))
                             
                             
-                    if 'The wavelength is:' in line:
-                        wavelength_sel = float(line.split(':')[1].split('n')[0])
+                    if (wavelength == None) and ('The wavelength is:' in line):
+                        wavelength = float(line.split(':')[1].split('n')[0])
+
+                if 2*len(dataDict['peak_pos']) == len(dataDict['peak_names']):
+                        dataDict['peak_names'] = dataDict['peak_names'][::2]
+                
+                if calcLattice == True:
+                    res = calculateLatticeParams(dataDict['peak_names'], dataDict['peak_pos'], wavelength, plotResult=False)
+                    dataDict['a_lat']=res.params['a'].value*10; dataDict['a_err']=res.params['a'].stderr*10; 
+                    dataDict['c_lat']=res.params['c'].value*10; dataDict['c_err']=res.params['c'].stderr*10
+
+                if calcLoop == True:
+                    dataDict['a_loop'], dataDict['a_loop_neg'], dataDict['a_loop_pos'], dataDict['d_new'] =  dislocationTypeCalc(
+                        disloctype='loop', ellipticity=ellipticity).calcRhoError(
+                        (dataDict['a1'], dataDict['a1_neg'], dataDict['a1_pos']), 
+                            (dataDict['a2'], dataDict['a2_neg'], dataDict['a2_pos']), dataDict['d'], printResult=False)
+                    dataDict['d_new_neg'] = (dataDict['d_neg'] / dataDict['d']) * dataDict['d_new']
+                    dataDict['d_new_pos'] = (dataDict['d_pos'] / dataDict['d']) * dataDict['d_new']
+
+                data_df = data_df.append(dataDict, ignore_index = True)
                     
-
-                a_lat = np.nan; a_err = np.nan; c_lat = np.nan; c_err = np.nan;
-
-                if (peak_names != []) and (peak_pos != []):
-                    res = calculateLatticeParams(peak_names, peak_pos, wavelength_sel, plotResult=False)
-                    a_lat=res.params['a'].value*10; a_err=res.params['a'].stderr*10; c_lat=res.params['c'].value*10; c_err=res.params['c'].stderr*10
-
-                a_loop, a_loop_neg, a_loop_pos, d_new =  dislocationTypeCalc(
-                    disloctype='loop', ellipticity=ellipticity).calcRhoError(
-                    (a1, a1_neg, a1_pos), (a2, a2_neg, a2_pos), d, printResult=False)
-
-                if (peak_names != []) and (peak_pos != []):
-
-                    index_list.append(i)
-                    data_list.append([fullname.split('/')[-1]] + [np.round(x ,6) for x in [wssr, d, d_new, (d_neg/d)*d_new, (d_pos/d)*d_new, a1, a1_neg, a1_pos, a2, a2_neg, a2_pos, 
-                                      m, m_neg, m_pos, a_loop, a_loop_neg, a_loop_pos, b, b_neg, b_pos, c, c_neg, c_pos, a_lat, c_lat, a_err, c_err]])
     
-    print('Parsed {0} solution files succesfully                                                                    '.format(len(index_list)))
+    print('Parsed {0} solution files succesfully                                                                    '.format(data_df.shape[0]))
     if num_error >0:
         print('"*** END" not present in {0}                                                                     '.format(num_error))
-    
-    data_df = pd.DataFrame(np.array(data_list), 
-                           columns=['filename', 'wssr', 'rho', 'rho_new', 'rho_neg', 'rho_pos', 'a1', 'a1_neg', 'a1_pos', 'a2', 'a2_neg', 'a2_pos', 
-                                    'm', 'm_neg', 'm_pos', 'a_loop', 'a_loop_neg', 'a_loop_pos', 'b', 'b_neg', 'b_pos', 'c', 'c_neg', 'c_pos', 'a_lat', 'c_lat', 'a_err', 'c_err'], 
-                           index=index_list)
-    
-    data_df.reset_index(inplace=True)
-    data_df.drop('index', axis=1, inplace=True)
-    
-    for col in data_df.columns[1:]:
-        data_df[col] = pd.to_numeric(data_df[col], downcast="float")
     
     print('Done!')
     
