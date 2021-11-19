@@ -546,6 +546,11 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
                     res = calculateLatticeParams(dataDict['peak_names'], dataDict['peak_pos'], wavelength, plotResult=False)
                     dataDict['a_lat']=res.params['a'].value*10; dataDict['a_err']=res.params['a'].stderr*10; 
                     dataDict['c_lat']=res.params['c'].value*10; dataDict['c_err']=res.params['c'].stderr*10
+                    
+                    dataDict['covera'] = dataDict['c_lat']/dataDict['a_lat']
+                    dataDict['covera_err'] = dataDict['covera']*np.sqrt((dataDict['c_err']/dataDict['c_lat'])**2+(dataDict['a_err']/dataDict['a_lat'])**2)
+                    dataDict['cellvol'] = dataDict['a_lat']**2*np.sin(np.deg2rad(60))*dataDict['c_lat']
+                    dataDict['cellvol_err'] = dataDict['cellvol'] * np.sqrt((dataDict['c_err']/dataDict['c_lat'])**2+2*(dataDict['a_err']/dataDict['a_lat'])**2)
 
                 if calcLoop == True:
                     dataDict['a_loop'], dataDict['a_loop_neg'], dataDict['a_loop_pos'], dataDict['d_new'] =  dislocationTypeCalc(
