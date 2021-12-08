@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.transforms as transforms
 
 def getReflections(crystalType, wavelength, outputType='2theta', 
                     a=None, b=None, c=None, 
@@ -147,3 +149,51 @@ def getReflections(crystalType, wavelength, outputType='2theta',
         return np.array(peak_name), np.array(peak_pos_d)
     elif outputType == 'k':
         return np.array(peak_name), np.array(peak_pos_k)
+    
+
+
+def addLabels(ax, lax, names, hkls, positions, colours):
+    '''
+    ax: matplotlib.axes
+        Axis which contains the data.
+    lax: matplotlib.axes
+        Axis which the labels should go.
+    names: list(str)
+        Name of each phase.
+    hkls: list(list(str))
+        List of hkls for each phase.
+    positions: list(list(float))
+        List of positions for each phase (corresponding to hkls).
+    colours: list(str)
+        Colours for each phase.
+    
+    Example
+    --------
+    Use the following example to generate the axes for data and labels:
+    
+    >> f, (lax, ax) = plt.subplots(2,1, gridspec_kw={'height_ratios': [1, 5]}, figsize = (14, 8), sharex=True)
+    '''
+
+    yvals = np.arange(len(names))[::-1]*0.4
+    
+    xmin =  np.min([np.min(i.get_data()[0]) for i in ax.lines])
+    xmax =  np.max([np.max(i.get_data()[0]) for i in ax.lines])
+
+    trans = transforms.blended_transform_factory(lax.transAxes, lax.transData)
+    
+    for name, hkl, position, colour, yval in zip(names, hkls, positions, colours, yvals):
+        
+        xdata = [i.get_data()[0] for i in ax.lines]
+        
+        lax.text(x = 0, y=yval, s=name, fontsize=10, c=colour, fontweight='bold', va= 'center', transform = trans)
+
+        for idx, angle in zip(hkl, position):
+            if xmin < angle <xmax:
+                ax.axvline(angle, alpha=0.2, c=colour)
+                lax.axvline(angle, alpha=0.2, c=colour)
+                lax.text(x=angle, y=yval,  s=idx, fontsize=10, c=colour, rotation=90, ha= 'center', va= 'center')
+
+    lax.axis('off')
+    lax.set_ylim(np.min(yvals)-0.2, np.max(yvals)+0.2)
+
+    plt.tight_layout()
