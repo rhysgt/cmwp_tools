@@ -650,7 +650,7 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
     return data_df
 
 
-def getBaseline(xvals, yvals, baseline, baseline_interpolate, write_to=None):
+def getBaseline(xvals, yvals, baseline, baseline_interpolate, baseline_interpolate_factor, write_to=None):
     """
     Function to create a background spline for CMWP.
 
@@ -661,9 +661,11 @@ def getBaseline(xvals, yvals, baseline, baseline_interpolate, write_to=None):
     yvals: np.array(float)
         Data y axis, i.e. intensities.
     baseline: list(float)
-        Positions to calculate background spline.
+        X positions from which to calculate background spline from data.
     baseline_interpolate: list(float)
-        Additional positions for spline.
+        Additional positions for spline (not calculated from data!)
+    baseline_interpolate_factor: list(float)
+        Multiplication factor for baseline_interpolate values.
     write_to: str
         Location to save .bg-spline.dat file.
 
@@ -684,14 +686,14 @@ def getBaseline(xvals, yvals, baseline, baseline_interpolate, write_to=None):
 
     # Refine peak position by searching in +-searchrange
     searchmask = np.linspace(num_index - 5, num_index + 5, 2 * 5 + 1, axis=1).astype(int)
-    baseline_int = np.mean(yvals[:, None][searchmask], axis=1).T[0]
+    baseline_int = np.mean(yvals[:, None][searchmask], axis=1).T[0]-0.8
 
     cs = CubicSpline(baseline_pos, baseline_int)
 
     # Add additional baseline_interpolate points
     if baseline_interpolate is not None:
         baseline_pos += baseline_interpolate
-        baseline_int = np.append(baseline_int, cs(baseline_interpolate))
+        baseline_int = np.append(baseline_int, cs(baseline_interpolate)*baseline_interpolate_factor)
 
     # Sort values
     idx = np.argsort(baseline_pos)
@@ -707,7 +709,7 @@ def getBaseline(xvals, yvals, baseline, baseline_interpolate, write_to=None):
     return baseline_pos, baseline_int, cs
 
 
-def getPeaks(xvals, yvals, peak_pos, peak_name, searchrange, write_to=None):
+def getPeaks(xvals, yvals, peak_pos, peak_name, cs, searchrange, phasenumber = 0, ax=None, plotcolour=None, mode='w', write_to=None):
     """
 
     Parameters
@@ -720,8 +722,18 @@ def getPeaks(xvals, yvals, peak_pos, peak_name, searchrange, write_to=None):
         Theoretical peak positions.
     peak_name: list(str)
         Peak hkls.
+    cs: CubicSpline
+        Background cubic spline (for calculating actual peak intensity).
     searchrange: int
-        Range to search for maxima
+        Range to search for maxima.
+    phaseNumber: int
+        Phase number to use for peak-index.
+    ax: Ax
+        Axes to plot lines and hkl.
+    plotcolour: str
+        Colour to plot lines.
+    mode: str
+        Write mode to file i.e. 'w' or 'w+'.
     write_to: str
         Location to save .peak-index.dat file.
 
@@ -746,10 +758,17 @@ def getPeaks(xvals, yvals, peak_pos, peak_name, searchrange, write_to=None):
 
     # Update peak_pos and peak_int
     peak_pos = xvals[peak_index]
-    peak_int = yvals[peak_index]
+    peak_int = yvals[peak_index] 
 
     if write_to is not None:
-        with open(write_to, 'w') as f:
-            np.savetxt(fname=f, X=np.c_[peak_pos, peak_int, peak_name], fmt='%s %s %s 0')
+        with open(write_to, mode) as f:
+            np.savetxt(fname=f, X=np.c_[peak_pos, peak_int - cs(peak_pos), peak_name], fmt='%s %s %s ' + str(phasenumber))
+            
+    if ax is not None:
+        ax.vlines(peak_pos, ymin=np.min(yvals), ymax=np.max(yvals), alpha=0.1, colors=plotcolour)
+    
+        for pos, intensity, name in zip(peak_pos, peak_int+10, peak_name):
+            ax.text(pos, intensity, name, horizontalalignment = 'center', c=plotcolour)
 
-    return peak_pos, peak_name, peak_int
+
+    return peak_pos, peak_name, peak_int - cs(peak_pos)
