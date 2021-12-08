@@ -493,6 +493,8 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
     -----------
     directory: str
         Directory containing solution files to parse.
+    calcLattice: bool
+        If true, calculate lattice params for phase 0.
     calcLoop: bool
         If true, calculate <a> and <c> loop fractions from a1, a2.
     ellipticity: float
@@ -524,8 +526,7 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
             dataDict = {}
 
             dataDict['peak_names'] = [];
-            dataDict['peak_pos'] = [];
-            dataDict['peak_int'] = [];
+            dataDict['peak_phase'] = [];
 
             dataDict['filename'] = fullname.split('/')[-1]
 
@@ -549,16 +550,15 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
 
                     if (readParams == 1) and ('=' in line):
                         if line.split('=')[1] == '\n':
-                            break
+                            ignore=0
                         else:
                             dataDict[line.split('=')[0]] = float(line.split('=')[1][:-1])
 
                     ### AND HERE
                     if 'And now listing the physical' in line:
                         readParams = 0
-
+                
                 ####### READ PHYSICAL PARAMATER ERRORS
-                i = 0
                 for line in lines:
                     if 'error estimates for parameter' in line:
                         par = line.split(' ')[6]
@@ -574,28 +574,45 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
                         dataDict[par + '_neg'] = np.abs((float(error_abs[0]) / 100) * dataDict[par])
                         dataDict[par + '_pos'] = np.abs((float(error_abs[1]) / 100) * dataDict[par])
 
+                ####### READ PEAK PHASE AND PEAK NAMES
+                    if 'Found peak at' in line:
+                        # Found peak at 6.5540, intensity=0, phase=1.
+                        dataDict['peak_phase'].append(int(line.split('=')[-1][0]))
+
                     if 'hkl=' in line:
                         dataDict['peak_names'].append(line.split('=')[1][0:3])
+                            
+                 ####### READ PEAK POSITION AND INTENSITY
+                dataDict['peak_pos'] = np.zeros(len(dataDict['peak_names']))
+                dataDict['peak_int'] = np.zeros(len(dataDict['peak_names']))
+
+                for line in lines:
                     if 'i_s0' in line:
                         if '+' in line:
-                            dataDict['peak_pos'].append(float(line.split('=')[1].split('+')[0]))
+                            dataDict['peak_pos'][int(line[5:9])] = float(line.split('=')[1].split('+')[0])
 
                     # EXAMPLE: i_max_7         = 939.718          +/- 4.919        (0.5234%)
                     # EXAMPLE: i_max_1         = 1.00679e+12      +/- 2.881e+09    (0.2861%)
                     if 'i_max' in line:
                         # 1.00679e+12
                         numberString = line.split('=')[-1].split('+/-')[0]
-                        dataDict['peak_int'].append(float(numberString))
+                        dataDict['peak_int'][int(line[6:10])] = float(numberString)
 
                     if (wavelength == None) and ('The wavelength is:' in line):
                         wavelength = float(line.split(':')[1].split('n')[0])
 
-                if 2 * len(dataDict['peak_pos']) == len(dataDict['peak_names']):
-                    dataDict['peak_names'] = dataDict['peak_names'][::2]
-
+            ####### CALCULATE LATTICE PARAMS FOR PHASE 1
                 if calcLattice == True:
-                    res = calculateLatticeParams(dataDict['peak_names'], dataDict['peak_pos'], wavelength,
+                    
+                    names = np.array(dataDict['peak_names'])
+                    phases = np.array(dataDict['peak_phase'])
+                    poss = np.array(dataDict['peak_pos'])
+                    
+                    res = calculateLatticeParams(names[(phases == 0) & (poss > 0)], 
+                                                 poss[(phases == 0) & (poss > 0)], 
+                                                 wavelength,
                                                  plotResult=False)
+                                                      
                     dataDict['a_lat'] = res.params['a'].value * 10;
                     dataDict['a_err'] = res.params['a'].stderr * 10;
                     dataDict['c_lat'] = res.params['c'].value * 10;
@@ -608,6 +625,7 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
                     dataDict['cellvol_err'] = dataDict['cellvol'] * np.sqrt(
                         (dataDict['c_err'] / dataDict['c_lat']) ** 2 + 2 * (dataDict['a_err'] / dataDict['a_lat']) ** 2)
 
+            ####### CALCULATE <a>/<c> LOOP FRACTIONS
                 if calcLoop == True:
                     dataDict['a_loop'], dataDict['a_loop_neg'], dataDict['a_loop_pos'], dataDict[
                         'd_new'] = dislocationTypeCalc(
