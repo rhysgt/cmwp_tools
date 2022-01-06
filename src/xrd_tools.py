@@ -185,13 +185,13 @@ def addLabels(ax, lax, names, hkls, positions, colours):
         
         xdata = [i.get_data()[0] for i in ax.lines]
         
-        lax.text(x = 0, y=yval, s=name, fontsize=10, c=colour, fontweight='bold', va= 'center', transform = trans)
+        lax.text(x = 0, y=yval, s=name, fontsize=10, c=colour, fontweight='bold', ha='right', va= 'center', transform = trans)
 
         for idx, angle in zip(hkl, position):
             if xmin < angle <xmax:
                 ax.axvline(angle, alpha=0.2, c=colour)
                 lax.axvline(angle, alpha=0.2, c=colour)
-                lax.text(x=angle, y=yval,  s=idx, fontsize=10, c=colour, rotation=90, ha= 'center', va= 'center')
+                lax.text(x=angle, y=yval,  s=idx, fontsize=10, c=colour, rotation=90, ha= 'center', va= 'center', clip_on=True)
 
     lax.axis('off')
     lax.set_ylim(np.min(yvals)-0.2, np.max(yvals)+0.2)
