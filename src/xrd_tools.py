@@ -155,9 +155,9 @@ def getReflections(crystalType, wavelength, outputType='2theta',
 def addLabels(ax, lax, names, hkls, positions, colours):
     '''
     ax: matplotlib.axes
-        Axis which contains the data.
+        Axis which contains the plotted data.
     lax: matplotlib.axes
-        Axis which the labels should go.
+        Axis on which the labels should go (designed to be different to ax above).
     names: list(str)
         Name of each phase.
     hkls: list(list(str))
@@ -172,6 +172,8 @@ def addLabels(ax, lax, names, hkls, positions, colours):
     Use the following example to generate the axes for data and labels:
     
     >> f, (lax, ax) = plt.subplots(2,1, gridspec_kw={'height_ratios': [1, 5]}, figsize = (14, 8), sharex=True)
+    
+    The label axis will be 1/5 of the height of the data axis in the above example.
     '''
 
     yvals = np.arange(len(names))[::-1]*0.4
