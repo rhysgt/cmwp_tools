@@ -635,6 +635,7 @@ def extractDataDir(directory, calcLattice=True, calcLoop=True, ellipticity=1, wa
                     dataDict['d_new_neg'] = (dataDict['d_neg'] / dataDict['d']) * dataDict['d_new']
                     dataDict['d_new_pos'] = (dataDict['d_pos'] / dataDict['d']) * dataDict['d_new']
 
+                dataDict['filename'] = dataDict['filename'][:-4]
                 data_df = data_df.append(dataDict, ignore_index=True)
 
     print(
