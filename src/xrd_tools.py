@@ -180,6 +180,8 @@ def addLabels(ax, lax, names, hkls, positions, colours):
     
     xmin =  np.min([np.min(i.get_data()[0]) for i in ax.lines])
     xmax =  np.max([np.max(i.get_data()[0]) for i in ax.lines])
+    
+    ax.set_xlim(xmin, xmax)
 
     trans = transforms.blended_transform_factory(lax.transAxes, lax.transData)
     
